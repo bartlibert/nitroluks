@@ -1,10 +1,8 @@
 #include <algorithm>
 #include <array>
-#include <cctype>
-#include <cinttypes>
 #include <cstdio>
-#include <cstdlib>
 #include <cstring>
+#include <libnitrokey/CommandFailedException.h>
 #include <libnitrokey/NitrokeyManager.h>
 #include <memory>
 #include <termios.h>
