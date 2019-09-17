@@ -5,7 +5,7 @@
 #include <inttypes.h>
 #include <termios.h>
 #include <unistd.h>
-#include "include/NK_C_API.h"
+#include <libnitrokey/NK_C_API.h>
 
 
 #define STATUS_OK 0
