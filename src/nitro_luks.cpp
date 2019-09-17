@@ -38,7 +38,7 @@ void reset_input_mode (void)
   tcsetattr(STDIN_FILENO, TCSANOW, &saved_attributes);
 }
 
-int main(int argc, char const *argv[])
+int main(int /* argc */, char const * /* argv */[])
 {
     const char* LUKS_password;
     char password[MAX_PIN_LENGTH + 1];
