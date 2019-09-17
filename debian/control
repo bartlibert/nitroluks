@@ -2,7 +2,7 @@ Source: nitroluks
 Section: unknown
 Priority: optional
 Maintainer: Arto Sänkiaho <artosank@gmail.com>
-Build-Depends: debhelper (>= 9), libhidapi-dev, libusb-dev, cmake
+Build-Depends: debhelper (>= 9), libhidapi-dev, libusb-dev, cmake, libfmt-dev
 Standards-Version: 3.9.8
 
 Package: nitroluks

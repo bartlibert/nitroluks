@@ -2,6 +2,8 @@
 #include <array>
 #include <cstdio>
 #include <cstring>
+#define FMT_STRING_ALIAS 1
+#include <fmt/format.h>
 #include <libnitrokey/CommandFailedException.h>
 #include <libnitrokey/NitrokeyManager.h>
 #include <memory>
@@ -15,7 +17,7 @@ struct termios saved_attributes;
 
 int error(char const* msg)
 {
-    fprintf(stderr, "%s \n*** Falling back to default LUKS password entry.\n", msg);
+    fmt::print(stderr, fmt("{:s} \n*** Falling back to default LUKS password entry.\n"), msg);
     return ERROR;
 }
 
@@ -46,7 +48,7 @@ int main(int /* argc */, char const* /* argv */[])
         return error("*** No nitrokey detected.\n");
     }
 
-    fprintf(stderr, "*** Nitrokey : %s found!\n", nk->get_serial_number().c_str());
+    fmt::print(stderr, fmt("*** Nitrokey : {:s} found!\n"), nk->get_serial_number());
 
     auto authenticated = false;
     std::array<char, MAX_PIN_LENGTH + 1> password{};
@@ -57,7 +59,7 @@ int main(int /* argc */, char const* /* argv */[])
             return error("*** User PIN locked.");
         }
 
-        fprintf(stderr, "*** %d PIN retries left. Enter the (user) PIN. Empty to cancel\n", retry_count);
+        fmt::print(stderr, fmt("*** {:d} PIN retries left. Enter the (user) PIN. Empty to cancel\n"), retry_count);
 
         // Ask the password and unlock the nitrokey
         disable_echo();
@@ -76,14 +78,13 @@ int main(int /* argc */, char const* /* argv */[])
         }
         catch (CommandFailedException& e) {
             if (e.reason_wrong_password()) {
-                fprintf(stderr, "*** Wrong PIN!\n");
+                fmt::print(stderr, "*** Wrong PIN!\n");
                 continue;
             }
-            printf("%s\n", e.what());
-            return error("*** Error in PIN entry.\n");
+            return error(fmt::format(fmt("*** Error in PIN entry: {:s}.\n"), e.what()).c_str());
         }
         authenticated = true;
-        fprintf(stderr, "*** PIN entry successful.\n");
+        fmt::print(stderr, "*** PIN entry successful.\n");
     } while (!authenticated);
 
     //  Find a slot from the nitrokey where we fetch the LUKS key from.
@@ -91,11 +92,10 @@ int main(int /* argc */, char const* /* argv */[])
         nk->enable_password_safe(password.data());
     }
     catch (CommandFailedException& e) {
-        printf("%s\n", e.what());
-        return error("*** Error while accessing password safe.\n");
+        return error(fmt::format(fmt("*** Error while accessing password safe.\n"), e.what()).c_str());
     }
 
-    fprintf(stderr, "*** Scanning the nitrokey slots...\n");
+    fmt::print(stderr, "*** Scanning the nitrokey slots...\n");
     auto slots = nk->get_password_safe_slot_status();
 
     constexpr auto SLOT_ENABLED = 1;
@@ -116,7 +116,7 @@ int main(int /* argc */, char const* /* argv */[])
     auto LUKS_password = nk->get_password_safe_slot_password(*luks_slot);
 
     // print password to stdout
-    fprintf(stdout, "%s", LUKS_password);
+    fmt::print(stdout, fmt("{:s}"), LUKS_password);
 
     return 0;
 }

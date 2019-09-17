@@ -3,13 +3,14 @@ project('nitro_luks', 'cpp',
   default_options : ['warning_level=3', 'cpp_std=c++14'])
 
 nitrokey = dependency('libnitrokey-1')
+fmt = dependency('fmt', static: true)
 
 sources = ['src/nitro_luks.cpp']
 
 exe = executable(
   'nitro_luks',
   sources,
-  dependencies: [nitrokey],
+  dependencies: [nitrokey, fmt],
   install : true)
 
 install_data(
