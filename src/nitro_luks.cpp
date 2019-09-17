@@ -48,7 +48,6 @@ int main(int /* argc */, char const* /* argv */[])
     int empty_slots = 0;
     uint8_t slot_number = 255;
     uint8_t retry_count;
-    char ask[2];
 
     // Disable debug messages
     NK_set_debug(false);
@@ -63,31 +62,22 @@ int main(int /* argc */, char const* /* argv */[])
     }
 
     do {
-        do {
-            // Stop if user pin is locked
-            retry_count = NK_get_user_retry_count();
-            if (retry_count == 0)
-                return error("*** User PIN locked.");
+        // Stop if user pin is locked
+        retry_count = NK_get_user_retry_count();
+        if (retry_count == 0)
+            return error("*** User PIN locked.");
 
-            fprintf(stderr, "*** %d PIN retries left. Type N to quit or Y to continue and press enter.\n", retry_count);
-            fgets(ask, 2, stdin);
-            ask[strcspn(ask, "\n")] = 0;
-            if (strcmp(ask, "N") == 0)
-                return error("*** Exiting...");
-            else
-                // clear the input buffer
-                while (getchar() != '\n')
-                    ;
-
-        } while ((strcmp(ask, "Y") != 0));
+        fprintf(stderr, "*** %d PIN retries left. Enter the (user) PIN. Empty to cancel\n", retry_count);
 
         // Ask the password and unlock the nitrokey
-        fprintf(stderr, "Enter the (user) PIN:\n");
         disable_echo();
         fgets(password, sizeof(password), stdin);
         reset_input_mode();
         // remove the trailing newline
         password[strcspn(password, "\n")] = 0;
+        if (strlen(password) == 0) {
+            return error("*** No PIN provided.");
+        }
         auth_status = NK_user_authenticate(password, password);
 
         // handle the login results
