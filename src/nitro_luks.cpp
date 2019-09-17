@@ -1,18 +1,17 @@
-#include <ctype.h>
-#include <inttypes.h>
-#include <libnitrokey/NK_C_API.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <algorithm>
+#include <array>
+#include <cctype>
+#include <cinttypes>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <libnitrokey/NitrokeyManager.h>
+#include <memory>
 #include <termios.h>
 #include <unistd.h>
 
-#define STATUS_OK 0
-#define WRONG_PASSWORD 4
-
-#define SLOT_COUNT 16
-#define ERROR 1
-#define MAX_PIN_LENGTH 20
+constexpr auto ERROR = 1;
+constexpr auto MAX_PIN_LENGTH = 20;
 
 struct termios saved_attributes;
 
@@ -22,9 +21,10 @@ int error(char const* msg)
     return ERROR;
 }
 
-void disable_echo(void)
+void disable_echo()
 {
-    struct termios tattr;
+    struct termios tattr {
+    };
     tcgetattr(STDIN_FILENO, &saved_attributes);
 
     tcgetattr(STDIN_FILENO, &tattr);
@@ -32,93 +32,90 @@ void disable_echo(void)
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &tattr);
 }
 
-void reset_input_mode(void)
+void reset_input_mode()
 {
     tcsetattr(STDIN_FILENO, TCSANOW, &saved_attributes);
 }
 
 int main(int /* argc */, char const* /* argv */[])
 {
-    const char* LUKS_password;
-    char password[MAX_PIN_LENGTH + 1];
-    uint8_t* slots;
-    int login_status;
-    int auth_status;
-    int password_safe_status;
-    int empty_slots = 0;
-    uint8_t slot_number = 255;
-    uint8_t retry_count;
+    auto nk = nitrokey::NitrokeyManager::instance();
 
-    // Disable debug messages
-    NK_set_debug(false);
-    login_status = NK_login_auto();
+    nk->set_debug(false);
+    auto connected = nk->connect();
 
-    if (login_status != 1) {
+    if (!connected) {
         return error("*** No nitrokey detected.\n");
     }
-    else {
-        const char* serial = NK_device_serial_number();
-        fprintf(stderr, "*** Nitrokey : %s found!\n", serial);
-    }
 
+    fprintf(stderr, "*** Nitrokey : %s found!\n", nk->get_serial_number().c_str());
+
+    auto authenticated = false;
+    std::array<char, MAX_PIN_LENGTH + 1> password{};
     do {
         // Stop if user pin is locked
-        retry_count = NK_get_user_retry_count();
-        if (retry_count == 0)
+        auto retry_count = nk->get_user_retry_count();
+        if (retry_count == 0) {
             return error("*** User PIN locked.");
+        }
 
         fprintf(stderr, "*** %d PIN retries left. Enter the (user) PIN. Empty to cancel\n", retry_count);
 
         // Ask the password and unlock the nitrokey
         disable_echo();
-        fgets(password, sizeof(password), stdin);
+        fgets(password.data(), password.size(), stdin);
         reset_input_mode();
         // remove the trailing newline
-        password[strcspn(password, "\n")] = 0;
-        if (strlen(password) == 0) {
+        std::replace(password.begin(), password.end(), '\n', '\0');
+        if (std::all_of(password.begin(), password.end(), [](const decltype(password)::value_type& character) {
+                return character == '\0';
+            })) {
             return error("*** No PIN provided.");
         }
-        auth_status = NK_user_authenticate(password, password);
 
-        // handle the login results
-        if (auth_status == WRONG_PASSWORD) {
-            fprintf(stderr, "*** Wrong PIN!\n");
+        try {
+            nk->user_authenticate(password.data(), password.data());
         }
-        else if (auth_status == STATUS_OK) {
-            fprintf(stderr, "*** PIN entry successful.\n");
-        }
-        else {
+        catch (CommandFailedException& e) {
+            if (e.reason_wrong_password()) {
+                fprintf(stderr, "*** Wrong PIN!\n");
+                continue;
+            }
+            printf("%s\n", e.what());
             return error("*** Error in PIN entry.\n");
         }
-    } while (auth_status == WRONG_PASSWORD);
+        authenticated = true;
+        fprintf(stderr, "*** PIN entry successful.\n");
+    } while (!authenticated);
 
     //  Find a slot from the nitrokey where we fetch the LUKS key from.
-    password_safe_status = NK_enable_password_safe(password);
-    if (password_safe_status != STATUS_OK)
+    try {
+        nk->enable_password_safe(password.data());
+    }
+    catch (CommandFailedException& e) {
+        printf("%s\n", e.what());
         return error("*** Error while accessing password safe.\n");
+    }
 
     fprintf(stderr, "*** Scanning the nitrokey slots...\n");
-    slots = NK_get_password_safe_slot_status();
-    for (uint8_t slot = 0; slot < SLOT_COUNT; ++slot) {
-        if (slots[slot] == 1) {
-            const char* slotname = NK_get_password_safe_slot_name(slot);
-            if (strcmp(slotname, "LUKS") == 0)
-                slot_number = slot;
-        }
-        else {
-            empty_slots++;
-        }
-    }
+    auto slots = nk->get_password_safe_slot_status();
 
-    if (empty_slots == SLOT_COUNT) {
+    constexpr auto SLOT_ENABLED = 1;
+    bool slots_enabled = std::any_of(
+        slots.begin(), slots.end(), [](const decltype(slots)::value_type& slot) { return slot == SLOT_ENABLED; });
+    if (!slots_enabled) {
         return error("*** No slots enabled.\n");
     }
-    else if (slot_number == 255) {
+    constexpr auto SLOT_NAME = "LUKS";
+    auto luks_slot = std::find_if(slots.begin(), slots.end(), [nk](const decltype(slots)::value_type& slot) {
+        return strncmp(nk->get_password_safe_slot_name(slot), SLOT_NAME, strlen(SLOT_NAME)) == 0;
+    });
+    if (luks_slot == slots.end()) {
         return error("*** No slot configured by name LUKS.\n");
     }
 
     // At this point we found a valid slot, go ahead and fetch the password.
-    LUKS_password = NK_get_password_safe_slot_password(slot_number);
+    auto LUKS_password = nk->get_password_safe_slot_password(*luks_slot);
 
     // print password to stdout
     fprintf(stdout, "%s", LUKS_password);
