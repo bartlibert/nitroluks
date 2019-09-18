@@ -37,3 +37,12 @@ install_data(
   install_dir:get_option('sysconfdir') / 'initramfs-tools' / 'hooks',
   rename:'nitroluks',
   install_mode:'rwxr-xr-x')
+
+tests = executable(
+  'tests',
+  sources: [
+    'test/main.cpp'
+    ],
+  include_directories: [includes, include_directories('test/lib')]
+  )
+test('nitrolukspp', tests)
