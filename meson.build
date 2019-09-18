@@ -5,11 +5,19 @@ project('nitro_luks', 'cpp',
 nitrokey = dependency('libnitrokey-1')
 fmt = dependency('fmt', static: true)
 
-sources = ['src/nitro_luks.cpp']
+includes = include_directories([
+  'include',
+  'third_party/gsl/include'])
+
+sources = [
+  'src/nitro_luks.cpp',
+  'src/NitroKey.cpp',
+  'src/exceptions.cpp']
 
 exe = executable(
   'nitro_luks',
   sources,
+  include_directories: includes,
   dependencies: [nitrokey, fmt],
   install : true)
 
