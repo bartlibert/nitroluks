@@ -28,7 +28,7 @@ void disable_echo()
     tcgetattr(STDIN_FILENO, &saved_attributes);
 
     tcgetattr(STDIN_FILENO, &tattr);
-    tattr.c_lflag &= ~(ICANON | ECHO);
+    tattr.c_lflag &= ~ECHO;
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &tattr);
 }
 
