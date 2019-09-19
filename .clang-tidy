@@ -1,6 +1,72 @@
 ---
-Checks: '*,clang-diagnostic-*,clang-analyzer-*,-clang-analyzer-alpha*,-llvm-header-guard,-google-runtime-int,-llvm-include-order,-modernize-use-trailing-return-type,-hicpp-avoid-c-arrays,'
-HeaderFilterRegex: '\./.*'
+Checks: >
+    *,
+    clang-analyzer-*,
+    clang-diagnostic-*,
+    -abseil*,
+    -android-*,
+    -cert-dcl03-c,
+    -cert-dcl16-c,
+    -cert-dcl54-cpp,
+    -cert-dcl59-cpp,
+    -cert-err09-cpp,
+    -cert-err58-cpp,
+    -cert-err61-cpp,
+    -cert-fio38-c,
+    -cert-msc30-c,
+    -cert-msc32-c,
+    -cert-oop11-cpp,
+    -clang-analyzer-alpha*,
+    -clang-diagnostic-unused-command-line-argument,
+    -cppcoreguidelines-avoid-c-arrays,
+    -cppcoreguidelines-avoid-magic-numbers,
+    -cppcoreguidelines-c-copy-assignment-signature,
+    -cppcoreguidelines-non-private-member-variables-in-classes,
+    -fuchsia-default-arguments,
+    -fuchsia-default-arguments-calls,
+    -fuchsia-default-arguments-declarations,
+    -fuchsia-header-anon-namespaces,
+    -fuchsia-overloaded-operator,
+    -fuchsia-trailing-return,
+    -google-default-arguments,
+    -google-readability-braces-around-statements,
+    -google-readability-function-size,
+    -google-readability-namespace-comments,
+    -google-runtime-int,
+    -google-runtime-references,
+    -hicpp-avoid-c-arrays,
+    -hicpp-braces-around-statements,
+    -hicpp-deprecated-headers,
+    -hicpp-explicit-conversions,
+    -hicpp-function-size,
+    -hicpp-invalid-access-moved,
+    -hicpp-member-init,
+    -hicpp-move-const-arg,
+    -hicpp-named-parameter,
+    -hicpp-new-delete-operators,
+    -hicpp-no-array-decay,
+    -hicpp-no-malloc,
+    -hicpp-noexcept-move,
+    -hicpp-special-member-functions,
+    -hicpp-static-assert,
+    -hicpp-undelegated-constructor,
+    -hicpp-uppercase-literal-suffix,
+    -hicpp-use-auto,
+    -hicpp-use-emplace,
+    -hicpp-use-equals-default,
+    -hicpp-use-equals-delete,
+    -hicpp-use-noexcept,
+    -hicpp-use-nullptr,
+    -hicpp-use-override,
+    -hicpp-vararg,
+    -llvm-header-guard,
+    -llvm-include-order,
+    -modernize-make-unique,
+    -modernize-use-trailing-return-type,
+    -mpi*,
+    -objc-*,
+    -zircon*
+HeaderFilterRegex: 'include/[^/]*.h'
 AnalyzeTemporaryDtors: false
 CheckOptions:
   - key:             cert-err61-cpp.CheckThrowTemporaries
@@ -321,4 +387,8 @@ CheckOptions:
     value:           '0'
   - key:             readability-simplify-boolean-expr.ChainedConditionalReturn
     value:           '0'
+  - key:             cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor
+    value:           '1'
+  - key:             misc-non-private-member-variables-in-classes.IgnoreClassesWithAllMemberVariablesBeingPublic
+    value:           '1'
 ...
