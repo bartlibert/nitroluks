@@ -10,13 +10,12 @@ includes = include_directories([
   'third_party/gsl/include'])
 
 sources = [
-  'src/nitro_luks.cpp',
   'src/NitroKey.cpp',
   'src/exceptions.cpp']
 
 exe = executable(
   'nitro_luks',
-  sources,
+  [sources, 'src/nitro_luks.cpp'],
   include_directories: includes,
   dependencies: [nitrokey, fmt],
   install : true)
@@ -41,8 +40,11 @@ install_data(
 tests = executable(
   'tests',
   sources: [
-    'test/main.cpp'
+    sources,
+    'test/main.cpp',
+    'test/test_nitrokey.cpp'
     ],
+  dependencies: [fmt, nitrokey],
   include_directories: [includes, include_directories('test/lib')]
   )
 test('nitrolukspp', tests)
