@@ -26,7 +26,7 @@ class NoEnabledSlotsException : public SlotException {
 
 class NoNamedSlotException : public SlotException {
   public:
-    NoNamedSlotException(const std::string& name);
+    explicit NoNamedSlotException(const std::string& name);
 };
 } /* namespace nitrolukspp */
 
