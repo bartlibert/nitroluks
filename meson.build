@@ -5,9 +5,7 @@ project('nitro_luks', 'cpp',
 nitrokey = dependency('libnitrokey-1')
 fmt = dependency('fmt', static: true)
 
-includes = include_directories([
-  'include',
-  'third_party/gsl/include'])
+includes = include_directories('include')
 
 sources = [
   'src/NitroKey.cpp',
