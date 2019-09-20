@@ -28,6 +28,11 @@ class NoNamedSlotException : public SlotException {
   public:
     explicit NoNamedSlotException(const std::string& name);
 };
+
+class EmptyPinException : public std::runtime_error {
+  public:
+    EmptyPinException();
+};
 } /* namespace nitrolukspp */
 
 #endif /* NITROLUKSPP_EXCEPTIONS_H */

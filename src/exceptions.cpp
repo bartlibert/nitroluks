@@ -12,3 +12,5 @@ nitrolukspp::NoNamedSlotException::NoNamedSlotException(const std::string& name)
     : SlotException("*** No slot configured by name " + name)
 {
 }
+
+nitrolukspp::EmptyPinException::EmptyPinException() : std::runtime_error("*** No PIN provided.") {}

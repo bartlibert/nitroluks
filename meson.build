@@ -9,7 +9,8 @@ includes = include_directories('include')
 
 sources = [
   'src/NitroKey.cpp',
-  'src/exceptions.cpp']
+  'src/exceptions.cpp',
+  'src/PinInput.cpp']
 
 exe = executable(
   'nitro_luks',

@@ -1,5 +1,6 @@
 #define FMT_STRING_ALIAS 1
 #include "NitroKey.h"
+#include "PinInput.h"
 #include "exceptions.h"
 #include <algorithm>
 #include <array>
@@ -13,28 +14,10 @@
 
 constexpr auto ERROR = 1;
 
-struct termios saved_attributes;
-
 int error(char const* msg)
 {
     fmt::print(stderr, fmt("{:s} \n*** Falling back to default LUKS password entry.\n"), msg);
     return ERROR;
-}
-
-void disable_echo()
-{
-    struct termios tattr {
-    };
-    tcgetattr(STDIN_FILENO, &saved_attributes);
-
-    tcgetattr(STDIN_FILENO, &tattr);
-    tattr.c_lflag &= ~ECHO;
-    tcsetattr(STDIN_FILENO, TCSAFLUSH, &tattr);
-}
-
-void reset_input_mode()
-{
-    tcsetattr(STDIN_FILENO, TCSANOW, &saved_attributes);
 }
 
 int main(int /* argc */, char const* /* argv */[])
@@ -50,6 +33,8 @@ int main(int /* argc */, char const* /* argv */[])
 
     fmt::print(stderr, fmt("*** Nitrokey : {:s} found!\n"), nk.get_serial_number());
 
+    auto pinInput = nitrolukspp::PinInput{};
+
     std::array<char, nitrolukspp::MAX_PIN_LENGTH + 1> password{};
     do {
         // Stop if user pin is locked
@@ -61,15 +46,11 @@ int main(int /* argc */, char const* /* argv */[])
         fmt::print(stderr, fmt("*** {:d} PIN retries left. Enter the (user) PIN. Empty to cancel\n"), retry_count);
 
         // Ask the password and unlock the nitrokey
-        disable_echo();
-        fgets(password.data(), password.size(), stdin);
-        reset_input_mode();
-        // remove the trailing newline
-        std::replace(password.begin(), password.end(), '\n', '\0');
-        if (std::all_of(password.begin(), password.end(), [](const decltype(password)::value_type& character) {
-                return character == '\0';
-            })) {
-            return error("*** No PIN provided.");
+        try {
+            password = pinInput.get();
+        }
+        catch (nitrolukspp::EmptyPinException& e) {
+            return error(e.what());
         }
 
         try {
